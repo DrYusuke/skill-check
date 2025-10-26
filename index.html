@@ -204,14 +204,18 @@
       document.getElementById("pdfDate").textContent = `評価日: ${now}`;
       document.getElementById("pdfScore").textContent = `総合スコア: ${total} / ${skills.length * 4} 点（${percent}%）`;
 
+      const element = document.getElementById("pdfPreview");
+      element.style.display = "block";
+
       setTimeout(() => {
-        const element = document.getElementById("pdfPreview");
         html2pdf().set({
           filename: `${id}_${name}_skill_report.pdf`,
           html2canvas: { scale: 2 },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        }).from(element).save();
-      }, 100);
+        }).from(element).save().then(() => {
+          element.style.display = "none";
+        });
+      }, 200);
     }
   </script>
 </body>
