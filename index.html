@@ -82,53 +82,30 @@
       color: #fff;
       border-color: #000;
     }
-    #pdfPreview {
-      display: none;
-      font-size: 14px;
-      padding: 1em;
-    }
-    #pdfPreview h2 {
-      font-size: 18px;
-      margin-bottom: 0.8em;
-    }
-    #pdfPreview p {
-      margin: 4px 0;
-    }
   </style>
 </head>
 <body>
-  <h1>パソコンスキルチェックシート</h1>
+  <div id="printArea">
+    <h1>パソコンスキルチェックシート</h1>
 
-  <label>学生番号: <input type="text" id="studentId" /></label>
-  <label>名前: <input type="text" id="studentName" /></label>
+    <label>学生番号: <input type="text" id="studentId" /></label>
+    <label>名前: <input type="text" id="studentName" /></label>
 
-  <table>
-    <thead>
-      <tr>
-        <th>スキル項目</th>
-        <th>自己評価（0〜4点）</th>
-      </tr>
-    </thead>
-    <tbody id="skillTable"></tbody>
-  </table>
+    <table>
+      <thead>
+        <tr>
+          <th>スキル項目</th>
+          <th>自己評価（0〜4点）</th>
+        </tr>
+      </thead>
+      <tbody id="skillTable"></tbody>
+    </table>
+
+    <div id="scoreDisplay" style="font-weight: bold; text-align: center; font-size: 16px; margin-top: 1em;"></div>
+  </div>
 
   <div style="text-align: center;">
     <button class="button" onclick="generatePDF()">PDF出力</button>
-  </div>
-
-  <!-- PDF用の非表示エリア -->
-  <div id="pdfPreview">
-    <h2>パソコンスキルチェック結果</h2>
-    <p id="pdfStudentId"></p>
-    <p id="pdfStudentName"></p>
-    <p id="pdfDate"></p>
-    <p id="pdfScore" style="font-weight: bold;"></p>
-    <table>
-      <thead>
-        <tr><th>スキル項目</th><th>評価点</th></tr>
-      </thead>
-      <tbody id="pdfSkillResults"></tbody>
-    </table>
   </div>
 
   <script>
@@ -184,42 +161,25 @@
     function generatePDF() {
       const name = document.getElementById('studentName').value;
       const id = document.getElementById('studentId').value;
-      const now = new Date().toLocaleDateString();
-
       let total = 0;
-      const pdfSkillResults = document.getElementById("pdfSkillResults");
-      pdfSkillResults.innerHTML = "";
 
       skills.forEach((skill, index) => {
         const radios = document.querySelectorAll(`input[name='skill-${index}']`);
-        let score = 0;
-        radios.forEach(r => { if (r.checked) score = parseInt(r.value); });
-        total += score;
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${skill}</td><td>${score}</td>`;
-        pdfSkillResults.appendChild(tr);
+        radios.forEach(r => {
+          if (r.checked) total += parseInt(r.value);
+        });
       });
 
       const percent = Math.round((total / (skills.length * 4)) * 100);
+      document.getElementById("scoreDisplay").textContent =
+        `総合スコア: ${total} / ${skills.length * 4} 点（${percent}%）`;
 
-      document.getElementById("pdfStudentName").textContent = `氏名: ${name}`;
-      document.getElementById("pdfStudentId").textContent = `学生番号: ${id}`;
-      document.getElementById("pdfDate").textContent = `評価日: ${now}`;
-      document.getElementById("pdfScore").textContent = `総合スコア: ${total} / ${skills.length * 4} 点（${percent}%）`;
-
-      const element = document.getElementById("pdfPreview");
-      element.style.display = "block";
-
-      setTimeout(() => {
-        html2pdf().set({
-          filename: `${id}_${name}_skill_report.pdf`,
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        }).from(element).save().then(() => {
-          element.style.display = "none";
-        });
-      }, 300);
+      const element = document.getElementById("printArea");
+      html2pdf().set({
+        filename: `${id}_${name}_skill_report.pdf`,
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      }).from(element).save();
     }
   </script>
 </body>
