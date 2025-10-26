@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>パソコンスキルチェック</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     body {
       font-family: "Segoe UI", sans-serif;
@@ -82,22 +82,24 @@
   </style>
 </head>
 <body>
-  <h1>パソコンスキルチェックシート</h1>
+  <div id="report">
+    <h1>パソコンスキルチェックシート</h1>
 
-  <label>学生番号: <input type="text" id="studentId" /></label>
-  <label>名前: <input type="text" id="studentName" /></label>
+    <label>学生番号: <input type="text" id="studentId" /></label>
+    <label>名前: <input type="text" id="studentName" /></label>
 
-  <table>
-    <thead>
-      <tr>
-        <th>スキル項目</th>
-        <th>自己評価（0〜4点）</th>
-      </tr>
-    </thead>
-    <tbody id="skillTable">
-      <!-- スキル項目をJSで挿入 -->
-    </tbody>
-  </table>
+    <table>
+      <thead>
+        <tr>
+          <th>スキル項目</th>
+          <th>自己評価（0〜4点）</th>
+        </tr>
+      </thead>
+      <tbody id="skillTable"></tbody>
+    </table>
+
+    <div id="scoreDisplay" style="font-weight: bold; text-align: center; font-size: 1.2em;"></div>
+  </div>
 
   <div style="text-align: center;">
     <button class="button" onclick="generatePDF()">PDF出力</button>
@@ -154,46 +156,27 @@
     });
 
     function generatePDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-
       const name = document.getElementById('studentName').value;
       const id = document.getElementById('studentId').value;
       const rows = document.querySelectorAll('#skillTable tr');
 
       let total = 0;
-      let results = [];
-
       rows.forEach((row, index) => {
-        const skill = row.cells[0].innerText;
         const radios = row.cells[1].querySelectorAll('input[type="radio"]');
-        let score = 0;
-        radios.forEach(r => { if (r.checked) score = parseInt(r.value); });
-        total += score;
-        results.push({ skill, score });
+        radios.forEach(r => { if (r.checked) total += parseInt(r.value); });
       });
 
-      const percent = Math.round((total / (results.length * 4)) * 100);
+      const percent = Math.round((total / (skills.length * 4)) * 100);
+      document.getElementById('scoreDisplay').textContent =
+        `総合スコア: ${total} / ${skills.length * 4} 点（${percent}%）`;
 
-      doc.setFontSize(16);
-      doc.text("パソコンスキルチェック結果", 20, 20);
-      doc.setFontSize(12);
-      doc.text(`学生番号: ${id}`, 20, 30);
-      doc.text(`氏名: ${name}`, 20, 40);
-      doc.text(`評価日: ${new Date().toLocaleDateString()}`, 20, 50);
-      doc.text(`総合スコア: ${total} / ${results.length * 4} 点（${percent}％）`, 20, 60);
-
-      let y = 70;
-      results.forEach(({ skill, score }) => {
-        doc.text(`${skill}：${score} 点`, 20, y);
-        y += 8;
-        if (y > 280) {
-          doc.addPage();
-          y = 20;
-        }
-      });
-
-      doc.save(`${id}_${name}_skill_report.pdf`);
+      // 一時的にスコア表示も含めてPDF化対象にする
+      const element = document.getElementById("report");
+      html2pdf().set({
+        filename: `${id}_${name}_skill_report.pdf`,
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      }).from(element).save();
     }
   </script>
 </body>
