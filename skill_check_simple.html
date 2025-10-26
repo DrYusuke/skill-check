@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>パソコンスキルチェック</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background-color: white;
+      color: black;
+      margin: 2em;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1em;
+    }
+    label {
+      display: inline-block;
+      margin: 0.5em 1em 1em 0;
+      font-weight: bold;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 2em;
+      border: 1px solid black;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    th, td {
+      border: 1px solid black;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #f0f0f0;
+    }
+    input[type="text"] {
+      padding: 5px;
+      font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .button {
+      display: inline-block;
+      padding: 0.7em 1.5em;
+      background-color: #000;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-size: 1em;
+      cursor: pointer;
+      margin-top: 1em;
+    }
+    .button:hover {
+      background-color: #333;
+    }
+    .rating-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+    .rating-buttons input[type="radio"] {
+      display: none;
+    }
+    .rating-buttons label {
+      display: inline-block;
+      padding: 10px 15px;
+      background-color: #eee;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      user-select: none;
+      transition: background-color 0.2s;
+    }
+    .rating-buttons input[type="radio"]:checked + label {
+      background-color: #000;
+      color: #fff;
+      border-color: #000;
+    }
+  </style>
+</head>
+<body>
+  <h1>パソコンスキルチェックシート</h1>
+
+  <label>学生番号: <input type="text" id="studentId" /></label>
+  <label>名前: <input type="text" id="studentName" /></label>
+
+  <table>
+    <thead>
+      <tr>
+        <th>スキル項目</th>
+        <th>自己評価（0〜4点）</th>
+      </tr>
+    </thead>
+    <tbody id="skillTable">
+      <!-- スキル項目をJSで挿入 -->
+    </tbody>
+  </table>
+
+  <div style="text-align: center;">
+    <button class="button" onclick="generatePDF()">PDF出力</button>
+  </div>
+
+  <script>
+    const skills = [
+      "ファイル整理・管理・提出",
+      "ローマ字タイピング",
+      "PowerPoint（自己紹介）",
+      "Outlook（メール・署名）",
+      "Excel（表計算・関数）",
+      "Excel（履歴書作成）",
+      "Excel（経理・検定3級）",
+      "QRQRマネージャー",
+      "ChatGPT活用",
+      "Web制作（HTML/CSS/JS）",
+      "Python（バックエンド）",
+      "Canva（名刺・動画）",
+      "VLLO（動画編集）",
+      "SunoAI / NotebookLM"
+    ];
+
+    const tableBody = document.getElementById("skillTable");
+    skills.forEach((skill, index) => {
+      const row = document.createElement("tr");
+      const skillCell = document.createElement("td");
+      skillCell.textContent = skill;
+      const ratingCell = document.createElement("td");
+
+      const div = document.createElement("div");
+      div.className = "rating-buttons";
+
+      for (let i = 0; i <= 4; i++) {
+        const input = document.createElement("input");
+        input.type = "radio";
+        input.name = `skill-${index}`;
+        input.value = i;
+        input.id = `skill-${index}-${i}`;
+        if (i === 0) input.checked = true;
+
+        const label = document.createElement("label");
+        label.setAttribute("for", `skill-${index}-${i}`);
+        label.textContent = i;
+
+        div.appendChild(input);
+        div.appendChild(label);
+      }
+
+      ratingCell.appendChild(div);
+      row.appendChild(skillCell);
+      row.appendChild(ratingCell);
+      tableBody.appendChild(row);
+    });
+
+    function generatePDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      const name = document.getElementById('studentName').value;
+      const id = document.getElementById('studentId').value;
+      const rows = document.querySelectorAll('#skillTable tr');
+
+      let total = 0;
+      let results = [];
+
+      rows.forEach((row, index) => {
+        const skill = row.cells[0].innerText;
+        const radios = row.cells[1].querySelectorAll('input[type="radio"]');
+        let score = 0;
+        radios.forEach(r => { if (r.checked) score = parseInt(r.value); });
+        total += score;
+        results.push({ skill, score });
+      });
+
+      const percent = Math.round((total / (results.length * 4)) * 100);
+
+      doc.setFontSize(16);
+      doc.text("パソコンスキルチェック結果", 20, 20);
+      doc.setFontSize(12);
+      doc.text(`学生番号: ${id}`, 20, 30);
+      doc.text(`氏名: ${name}`, 20, 40);
+      doc.text(`評価日: ${new Date().toLocaleDateString()}`, 20, 50);
+      doc.text(`総合スコア: ${total} / ${results.length * 4} 点（${percent}％）`, 20, 60);
+
+      let y = 70;
+      results.forEach(({ skill, score }) => {
+        doc.text(`${skill}：${score} 点`, 20, y);
+        y += 8;
+        if (y > 280) {
+          doc.addPage();
+          y = 20;
+        }
+      });
+
+      doc.save(`${id}_${name}_skill_report.pdf`);
+    }
+  </script>
+</body>
+</html>
